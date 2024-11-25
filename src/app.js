@@ -51,37 +51,53 @@ function checkForDuplicateTranslations(translations) {
     return duplicates;
 }
 
-async function handleFix(item, setDuplicates) {
-    const updatedTranslations = item.originalTranslations.filter(t => {
-        const key = `${t.locale}-${t.property}-${t.value}`;
-        return !item.translations.some(d => d.key === key && d.selectedValue !== t.value);
-    });
-
-    const endpoint = `/api/${item.type}/${item.id}`;
-    const updatedObject = await d2Get(endpoint);
-    updatedObject.translations = updatedTranslations;
-
-    await d2PutJson(endpoint, updatedObject);
-    setDuplicates(prevDuplicates =>
-        prevDuplicates.filter(duplicate => duplicate.id !== item.id)
-    );
-}
-
 async function handleFixSelected(selectedDuplicates, setDuplicates) {
     const success = [];
     const failures = [];
 
-    for (const item of selectedDuplicates) {
+    const groupedByObject = selectedDuplicates.reduce((acc, item) => {
+        if (!acc[item.id]) {
+            acc[item.id] = [];
+        }
+        acc[item.id].push(item);
+        return acc;
+    }, {});
+
+    for (const [id, items] of Object.entries(groupedByObject)) {
         try {
-            await handleFix(item, setDuplicates);
-            success.push(item);
+            const original = await d2Get(`/api/${items[0].type}/${id}?fields=:owner`);
+            const updatedTranslations = original.translations.filter(t => {
+                const key = `${t.locale}-${t.property}`;
+                return !items.some(item => item.translations.some(d => d.key === key && d.selectedValue !== t.value));
+            });
+            items.forEach(item => {
+                item.translations.forEach(trans => {
+                    if (trans.selectedValue !== null) {
+                        updatedTranslations.push({
+                            locale: item.locale,
+                            property: item.property,
+                            value: trans.selectedValue,
+                        });
+                    }
+                });
+            });
+
+            original.translations = updatedTranslations;
+
+            const endpoint = `/api/${items[0].type}/${id}`;
+            await d2PutJson(endpoint, original);
+            success.push(...items);
         } catch (error) {
             console.log(error);
-            failures.push(item);
+            failures.push(...items);
         }
     }
 
     alert(`${success.length} objects updated successfully. ${failures.length} updates failed.`);
+
+    setDuplicates(prevDuplicates =>
+        prevDuplicates.filter(duplicate => !success.includes(duplicate))
+    );
 }
 
 function TranslationsApp() {
@@ -140,12 +156,12 @@ function TranslationsApp() {
         );
     };
 
-    const handleCheckboxChange = (item) => {
+    const handleCheckboxChange = (id) => {
         setSelectedDuplicates(prevSelected => {
-            if (prevSelected.includes(item.id)) {
-                return prevSelected.filter(duplicate => duplicate !== item.id);
+            if (prevSelected.includes(id)) {
+                return prevSelected.filter(duplicate => duplicate !== id);
             } else {
-                return [...prevSelected, item.id];
+                return [...prevSelected, id];
             }
         });
     };
@@ -157,6 +173,8 @@ function TranslationsApp() {
     if (duplicates.length === 0) {
         return React.createElement("div", { className: "container" }, "No duplicate translations found.");
     }
+
+    const selectedItems = duplicates.filter(item => selectedDuplicates.includes(item.id));
 
     return React.createElement(
         "div",
@@ -171,29 +189,27 @@ function TranslationsApp() {
                 React.createElement(
                     TableRow,
                     null,
-                    React.createElement(TableCell, null, React.createElement(Checkbox, { onChange: () => setSelectedDuplicates(duplicates.map(dup => dup.id)) })),
+                    React.createElement(TableCell, null, React.createElement(Checkbox, { onChange: (event) => setSelectedDuplicates(event.target.checked ? duplicates.map(dup => dup.id) : []) })),
                     React.createElement(TableCell, null, "Object Type"),
                     React.createElement(TableCell, null, "ID"),
                     React.createElement(TableCell, null, "Name"),
                     React.createElement(TableCell, null, "Locale"),
                     React.createElement(TableCell, null, "Property"),
-                    React.createElement(TableCell, null, "Translations"),
-                    React.createElement(TableCell, null, "Action")
+                    React.createElement(TableCell, null, "Translations")
                 )
             ),
             React.createElement(
                 TableBody,
                 null,
-                duplicates.reduce((list, item, index, arr) => {
+                duplicates.reduce((acc, item, index, arr) => {
                     const sameObjectGroup = arr.filter(dup => dup.id === item.id);
-                    const isFirstInGroup = index === arr.indexOf(sameObjectGroup[0]);
-                    const isLastInGroup = index === arr.indexOf(sameObjectGroup[sameObjectGroup.length - 1]);
+                    const isFirstInGroup = item === sameObjectGroup[0];
 
-                    list.push(
+                    acc.push(
                         React.createElement(
                             TableRow,
                             { key: `${item.id}-${item.locale}-${item.property}` },
-                            isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, React.createElement(Checkbox, { checked: selectedDuplicates.includes(item.id), onChange: () => handleCheckboxChange(item) })),
+                            isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, React.createElement(Checkbox, { checked: selectedDuplicates.includes(item.id), onChange: () => handleCheckboxChange(item.id) })),
                             isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, item.type),
                             isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, item.id),
                             isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, item.name),
@@ -202,9 +218,7 @@ function TranslationsApp() {
                             React.createElement(
                                 TableCell,
                                 null,
-                                item.translations.filter((trans, i, arr) =>
-                                    arr.findIndex(t => t.key === trans.key) === i
-                                ).map((t) =>
+                                item.translations.map(t =>
                                     React.createElement(
                                         "div",
                                         { key: t.key },
@@ -215,21 +229,15 @@ function TranslationsApp() {
                                         t.value
                                     )
                                 )
-                            ),
-                            isLastInGroup && React.createElement(
-                                TableCell,
-                                { rowSpan: sameObjectGroup.length },
-                                React.createElement(Button, { onClick: () => handleFix(item, setDuplicates) }, "Fix")
                             )
                         )
                     );
 
-                    return list;
+                    return acc;
                 }, [])
             )
-
         ),
-        React.createElement(Button, { onClick: () => handleFixSelected(duplicates.filter(item => selectedDuplicates.includes(item.id)), setDuplicates) }, "Fix Selected")
+        React.createElement(Button, { onClick: () => handleFixSelected(selectedItems, setDuplicates) }, "Fix Selected")
     );
 }
 
