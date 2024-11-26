@@ -1,5 +1,5 @@
-# DHIS2 App Template for Dummies
-Basic DHIS2 app skeleton.
+# Translation Deduplicator
+App for identifying metadata objects with duplicate translations (one object having multiple translations for the same local and property).
 
 ## License
 © Copyright 
@@ -35,7 +35,7 @@ A different DHIS2 instance can be used to develop against by adding a `d2auth.js
 
 ```
 {
-    "baseUrl": "localhost:9000/dev",
+    "baseUrl": "http://localhost:9000/dev",
     "username": "john_doe",
     "password": "District1!"
 }

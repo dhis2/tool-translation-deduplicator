@@ -67,8 +67,7 @@ async function handleFixSelected(selectedDuplicates, setDuplicates) {
         try {
             const original = await d2Get(`/api/${items[0].type}/${id}?fields=:owner`);
             const updatedTranslations = original.translations.filter(t => {
-                const key = `${t.locale}-${t.property}`;
-                return !items.some(item => item.translations.some(d => d.key === key && d.selectedValue !== t.value));
+                return !items.some(item => item.duplicateKeys.has(`${t.locale}-${t.property}`));
             });
             items.forEach(item => {
                 item.translations.forEach(trans => {
@@ -93,7 +92,7 @@ async function handleFixSelected(selectedDuplicates, setDuplicates) {
         }
     }
 
-    alert(`${success.length} objects updated successfully. ${failures.length} updates failed.`);
+    alert(`${success.length} translation strings updated successfully. ${failures.length} updates failed.`);
 
     setDuplicates(prevDuplicates =>
         prevDuplicates.filter(duplicate => !success.includes(duplicate))
