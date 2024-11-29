@@ -3,18 +3,10 @@
   "description": "Tool to identify and remove duplicate translation keys in metadata.",
   "version": "0.1.0",
   "dependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/preset-env": "^7.26.0",
-    "@babel/preset-react": "^7.25.9",
-    "@material-ui/core": "^4.12.4",
-    "@material-ui/icons": "^4.11.3",
-    "babel-loader": "^9.2.1",
     "jquery": "^3.7.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "materialize-css": "^1.0.0-rc.2"
   },
   "devDependencies": {
-    "@dhis2/cli-style": "github:dhis2/cli-style",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.15.0",
     "copy-webpack-plugin": "^12.0.2",

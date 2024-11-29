@@ -1,15 +1,13 @@
 "use strict";
 
 //JS
-import React, { useState, useEffect } from "react";
-import ReactDOM from "react-dom";
-import { Button, Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Radio } from "@material-ui/core";
 import { d2Get, d2PutJson } from "./js/d2api.js";
+import M from "materialize-css";
 
 //CSS
 import "./css/header.css";
 import "./css/style.css";
-
+import "materialize-css/dist/css/materialize.min.css";
 
 async function fetchTranslatableObjectTypes() {
     const response = await d2Get("/api/schemas.json?fields=plural,translatable");
@@ -99,145 +97,158 @@ async function handleFixSelected(selectedDuplicates, setDuplicates) {
     );
 }
 
-function TranslationsApp() {
-    const [duplicates, setDuplicates] = useState([]);
-    const [selectedDuplicates, setSelectedDuplicates] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+function createTableRow(item, handleRadioChange, handleCheckboxChange, selectedDuplicates) {
+    const row = document.createElement("tr");
+    const checkboxCell = document.createElement("td");
+    const checkbox = document.createElement("label");
+    checkbox.innerHTML = `<input type="checkbox" ${selectedDuplicates.includes(item.id) ? "checked" : ""} /><span></span>`;
+    checkbox.querySelector("input").addEventListener("change", () => handleCheckboxChange(item.id));
+    checkboxCell.appendChild(checkbox);
+    row.appendChild(checkboxCell);
 
-    useEffect(() => {
-        async function init() {
-            const types = await fetchTranslatableObjectTypes();
-            const dupeList = [];
+    const typeCell = document.createElement("td");
+    typeCell.textContent = item.type;
+    row.appendChild(typeCell);
 
-            for (const type of types) {
-                const objects = await fetchObjectData(type);
-                objects.forEach(obj => {
-                    const duplicatedTranslations = checkForDuplicateTranslations(obj.translations);
-                    if (duplicatedTranslations.length > 0) {
-                        const duplicateKeys = new Set(duplicatedTranslations.map(dup => `${dup.locale}-${dup.property}`));
-                        duplicatedTranslations.forEach(dup => {
-                            const relevantTranslations = obj.translations.filter(t => t.locale === dup.locale && t.property === dup.property);
-                            const translations = relevantTranslations.map((t, i) => ({
-                                key: `${t.locale}-${t.property}-${t.value}`,
-                                value: t.value,
-                                selectedValue: i === 0 ? t.value : null
-                            }));
-                            dupeList.push({
-                                type: type.plural,
-                                id: obj.id,
-                                name: obj.name,
-                                locale: dup.locale,
-                                property: dup.property,
-                                translations: translations,
-                                originalTranslations: obj.translations,
-                                duplicateKeys: duplicateKeys // store duplicate keys for filtering
-                            });
-                        });
-                    }
-                });
-            }
+    const idCell = document.createElement("td");
+    idCell.textContent = item.id;
+    row.appendChild(idCell);
 
-            setDuplicates(dupeList);
-            setIsLoading(false);
-        }
-        init();
-    }, []);
+    const nameCell = document.createElement("td");
+    nameCell.textContent = item.name;
+    row.appendChild(nameCell);
+
+    const localeCell = document.createElement("td");
+    localeCell.textContent = item.locale;
+    row.appendChild(localeCell);
+
+    const propertyCell = document.createElement("td");
+    propertyCell.textContent = item.property;
+    row.appendChild(propertyCell);
+
+    const translationsCell = document.createElement("td");
+    item.translations.forEach(t => {
+        const radio = document.createElement("label");
+        radio.innerHTML = `<input name="${item.id}-${item.locale}-${item.property}" type="radio" ${t.selectedValue === t.value ? "checked" : ""} /><span>${t.value}</span>`;
+        radio.querySelector("input").addEventListener("change", () => handleRadioChange(item, t.key, t.value));
+        translationsCell.appendChild(radio);
+    });
+    row.appendChild(translationsCell);
+
+    return row;
+}
+
+function renderApp(duplicates, selectedDuplicates, handleRadioChange, handleCheckboxChange, handleFixSelected) {
+    const root = document.getElementById("root");
+    root.innerHTML = "";
+
+    if (duplicates.length === 0) {
+        root.innerHTML = "<div class='container'>No duplicate translations found.</div>";
+        return;
+    }
+
+    const container = document.createElement("div");
+    container.className = "container";
+
+    const title = document.createElement("h1");
+    title.textContent = "Translation Duplicate Fixer";
+    container.appendChild(title);
+
+    const table = document.createElement("table");
+    table.className = "striped";
+
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["", "Object Type", "ID", "Name", "Locale", "Property", "Translations"].forEach(text => {
+        const th = document.createElement("th");
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    duplicates.forEach(item => {
+        const row = createTableRow(item, handleRadioChange, handleCheckboxChange, selectedDuplicates);
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    container.appendChild(table);
+
+    const fixButton = document.createElement("button");
+    fixButton.className = "btn";
+    fixButton.textContent = "Fix Selected";
+    fixButton.addEventListener("click", () => handleFixSelected(duplicates.filter(item => selectedDuplicates.includes(item.id)), setDuplicates));
+    container.appendChild(fixButton);
+
+    root.appendChild(container);
+}
+
+function initApp() {
+    let duplicates = [];
+    let selectedDuplicates = [];
+
+    const setDuplicates = (newDuplicates) => {
+        duplicates = newDuplicates;
+        renderApp(duplicates, selectedDuplicates, handleRadioChange, handleCheckboxChange, handleFixSelected);
+    };
 
     const handleRadioChange = (item, key, value) => {
         const updated = item.translations.map(trans => ({
             ...trans,
             selectedValue: trans.key === key ? value : null,
         }));
-        setDuplicates(prevDuplicates =>
-            prevDuplicates.map(dup => (dup.id === item.id && dup.locale === item.locale && dup.property === item.property)
-                ? { ...item, translations: updated }
-                : dup)
-        );
+        setDuplicates(duplicates.map(dup => (dup.id === item.id && dup.locale === item.locale && dup.property === item.property)
+            ? { ...item, translations: updated }
+            : dup));
     };
 
     const handleCheckboxChange = (id) => {
-        setSelectedDuplicates(prevSelected => {
-            if (prevSelected.includes(id)) {
-                return prevSelected.filter(duplicate => duplicate !== id);
-            } else {
-                return [...prevSelected, id];
-            }
-        });
+        selectedDuplicates = selectedDuplicates.includes(id)
+            ? selectedDuplicates.filter(duplicate => duplicate !== id)
+            : [...selectedDuplicates, id];
+        renderApp(duplicates, selectedDuplicates, handleRadioChange, handleCheckboxChange, handleFixSelected);
     };
 
-    if (isLoading) {
-        return React.createElement("div", null, "Loading...");
-    }
+    const handleFixSelected = async (selectedItems, setDuplicates) => {
+        await handleFixSelected(selectedItems, setDuplicates);
+    };
 
-    if (duplicates.length === 0) {
-        return React.createElement("div", { className: "container" }, "No duplicate translations found.");
-    }
+    (async function init() {
+        const types = await fetchTranslatableObjectTypes();
+        const dupeList = [];
 
-    const selectedItems = duplicates.filter(item => selectedDuplicates.includes(item.id));
+        for (const type of types) {
+            const objects = await fetchObjectData(type);
+            objects.forEach(obj => {
+                const duplicatedTranslations = checkForDuplicateTranslations(obj.translations);
+                if (duplicatedTranslations.length > 0) {
+                    const duplicateKeys = new Set(duplicatedTranslations.map(dup => `${dup.locale}-${dup.property}`));
+                    duplicatedTranslations.forEach(dup => {
+                        const relevantTranslations = obj.translations.filter(t => t.locale === dup.locale && t.property === dup.property);
+                        const translations = relevantTranslations.map((t, i) => ({
+                            key: `${t.locale}-${t.property}-${t.value}`,
+                            value: t.value,
+                            selectedValue: i === 0 ? t.value : null
+                        }));
+                        dupeList.push({
+                            type: type.plural,
+                            id: obj.id,
+                            name: obj.name,
+                            locale: dup.locale,
+                            property: dup.property,
+                            translations: translations,
+                            originalTranslations: obj.translations,
+                            duplicateKeys: duplicateKeys // store duplicate keys for filtering
+                        });
+                    });
+                }
+            });
+        }
 
-    return React.createElement(
-        "div",
-        { className: "container" },
-        React.createElement("h1", null, "Translation Duplicate Fixer"),
-        React.createElement(
-            Table,
-            { className: "table" },
-            React.createElement(
-                TableHead,
-                null,
-                React.createElement(
-                    TableRow,
-                    null,
-                    React.createElement(TableCell, null, React.createElement(Checkbox, { onChange: (event) => setSelectedDuplicates(event.target.checked ? duplicates.map(dup => dup.id) : []) })),
-                    React.createElement(TableCell, null, "Object Type"),
-                    React.createElement(TableCell, null, "ID"),
-                    React.createElement(TableCell, null, "Name"),
-                    React.createElement(TableCell, null, "Locale"),
-                    React.createElement(TableCell, null, "Property"),
-                    React.createElement(TableCell, null, "Translations")
-                )
-            ),
-            React.createElement(
-                TableBody,
-                null,
-                duplicates.reduce((acc, item, index, arr) => {
-                    const sameObjectGroup = arr.filter(dup => dup.id === item.id);
-                    const isFirstInGroup = item === sameObjectGroup[0];
-
-                    acc.push(
-                        React.createElement(
-                            TableRow,
-                            { key: `${item.id}-${item.locale}-${item.property}` },
-                            isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, React.createElement(Checkbox, { checked: selectedDuplicates.includes(item.id), onChange: () => handleCheckboxChange(item.id) })),
-                            isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, item.type),
-                            isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, item.id),
-                            isFirstInGroup && React.createElement(TableCell, { rowSpan: sameObjectGroup.length }, item.name),
-                            React.createElement(TableCell, null, item.locale),
-                            React.createElement(TableCell, null, item.property),
-                            React.createElement(
-                                TableCell,
-                                null,
-                                item.translations.map(t =>
-                                    React.createElement(
-                                        "div",
-                                        { key: t.key },
-                                        React.createElement(Radio, {
-                                            checked: t.selectedValue === t.value,
-                                            onChange: () => handleRadioChange(item, t.key, t.value)
-                                        }),
-                                        t.value
-                                    )
-                                )
-                            )
-                        )
-                    );
-
-                    return acc;
-                }, [])
-            )
-        ),
-        React.createElement(Button, { onClick: () => handleFixSelected(selectedItems, setDuplicates) }, "Fix Selected")
-    );
+        setDuplicates(dupeList);
+    })();
 }
 
-ReactDOM.render(React.createElement(TranslationsApp, null), document.getElementById("root"));
+document.addEventListener("DOMContentLoaded", initApp);
