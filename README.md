@@ -1,8 +1,12 @@
 # Translation Deduplicator
-App for identifying metadata objects with duplicate translations (one object having multiple translations for the same local and property).
+Tool to identifying and fix metadata objects with duplicate translations (one object having multiple translations for the same local and property).
+
+> **WARNING**
+> This tool is intended to be used by system administrators to perform specific tasks, it is not intended for end users. It is available as a DHIS2 app, but has not been through the same rigorous testing as normal core apps. It should be used with care, and always tested in a development environment.
+
 
 ## License
-© Copyright 
+© Copyright University of Oslo 2024
 
 
 ## Getting started
