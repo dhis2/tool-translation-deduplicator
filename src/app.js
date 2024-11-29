@@ -47,7 +47,7 @@ function checkForDuplicateTranslations(translations) {
         }
     });
 
-    seen.forEach((translations, key) => {
+    seen.forEach((translations) => {
         if (translations.length > 1) {
             duplicates.push({
                 locale: translations[0].locale,
@@ -103,10 +103,10 @@ async function fixSelectedTranslations(selectedItems) {
     }
 
     if (success.length > 0) {
-        M.toast({html: `${success.length} translation strings updated successfully.`, classes: 'rounded'});
+        M.toast({html: `${success.length} translation strings updated successfully.`, classes: "rounded"});
     }
     if (failures.length > 0) {
-        M.toast({html: `${failures.length} updates failed.`, classes: 'rounded'});
+        M.toast({html: `${failures.length} updates failed.`, classes: "rounded"});
     }
 
     // Update the duplicates state and re-render the table
