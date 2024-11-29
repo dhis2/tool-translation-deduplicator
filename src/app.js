@@ -141,21 +141,15 @@ function createTableRow(item, handleRadioChange, handleCheckboxChange, selectedD
 function renderApp(duplicates, selectedDuplicates, handleRadioChange, handleCheckboxChange, handleFixSelected) {
     const root = document.getElementById("root");
     root.innerHTML = "";
-
     if (duplicates.length === 0) {
-        root.innerHTML = "<div class='container'>No duplicate translations found.</div>";
+        M.toast({html: 'No duplicate translations found.', classes: 'rounded'});
         return;
     }
 
-    const container = document.createElement("div");
-    container.className = "container";
-
-    const title = document.createElement("h1");
-    title.textContent = "Translation Duplicate Fixer";
-    container.appendChild(title);
-
     const table = document.createElement("table");
     table.className = "striped";
+    table.style.width = "100%";
+    table.style.padding = "10px";
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -174,15 +168,14 @@ function renderApp(duplicates, selectedDuplicates, handleRadioChange, handleChec
     });
     table.appendChild(tbody);
 
-    container.appendChild(table);
+    root.appendChild(table);
 
     const fixButton = document.createElement("button");
     fixButton.className = "btn";
     fixButton.textContent = "Fix Selected";
     fixButton.addEventListener("click", () => handleFixSelected(duplicates.filter(item => selectedDuplicates.includes(item.id)), setDuplicates));
-    container.appendChild(fixButton);
+    root.appendChild(fixButton);
 
-    root.appendChild(container);
 }
 
 function initApp() {
