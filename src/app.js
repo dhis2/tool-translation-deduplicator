@@ -178,6 +178,15 @@ function renderApp(duplicates, selectedDuplicates, handleRadioChange, handleChec
 
 }
 
+function renderPreloader(progress) {
+    const root = document.getElementById("root");
+    root.innerHTML = `
+        <div class="progress">
+            <div class="determinate" style="width: ${progress}%"></div>
+        </div>
+    `;
+}
+
 function initApp() {
     let duplicates = [];
     let selectedDuplicates = [];
@@ -212,7 +221,8 @@ function initApp() {
         const types = await fetchTranslatableObjectTypes();
         const dupeList = [];
 
-        for (const type of types) {
+        for (let i = 0; i < types.length; i++) {
+            const type = types[i];
             const objects = await fetchObjectData(type);
             objects.forEach(obj => {
                 const duplicatedTranslations = checkForDuplicateTranslations(obj.translations);
@@ -238,6 +248,8 @@ function initApp() {
                     });
                 }
             });
+            const progress = ((i + 1) / types.length) * 100;
+            renderPreloader(progress);
         }
 
         setDuplicates(dupeList);
