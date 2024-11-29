@@ -51,8 +51,8 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./compiled/tool_user_role_aggregator.zip
-        asset_name: tool_user_role_aggregator.zip
+        asset_path: ./compiled/tool-translation-deduplicator.zip
+        asset_name: tool-translation-deduplicator.zip
         asset_content_type: application/zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
