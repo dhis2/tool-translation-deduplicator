@@ -5,7 +5,6 @@ import { d2Get, d2PutJson } from "./js/d2api.js";
 import M from "materialize-css";
 
 // CSS Imports
-import "./css/header.css";
 import "./css/style.css";
 import "materialize-css/dist/css/materialize.min.css";
 
@@ -16,7 +15,7 @@ let selectedDuplicates = [];
 
 // Fetch and filter translatable object types
 async function fetchTranslatableObjectTypes() {
-    const response = await d2Get("/api/schemas.json?fields=plural,translatable");
+    const response = await d2Get("api/schemas.json?fields=plural,translatable,relativeApiEndpoint&filter=translatable:eq:true");
     return response.schemas.filter(schema => schema.translatable);
 }
 
