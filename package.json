@@ -1,7 +1,7 @@
 {
   "name": "tool-translation-deduplicator",
   "description": "Tool to identify and remove duplicate translation keys in metadata.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": {
     "jquery": "^3.7.1",
     "materialize-css": "^1.0.0-rc.2"
