@@ -44,7 +44,6 @@
       "96": "img/icons/app_logo_96x96.png"
     },
     "name": "Translation Deduplicator Tool",
-    "version": "0.1.0",
     "appType": "APP"
   }
 }
