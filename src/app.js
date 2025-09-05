@@ -2,6 +2,7 @@
 
 // JS Imports
 import { d2Get, d2PutJson } from "./js/d2api.js";
+import { loadLegacyHeaderBarIfNeeded } from "./js/check-header-bar.js";
 import M from "materialize-css";
 
 // CSS Imports
@@ -23,7 +24,7 @@ async function fetchTranslatableObjectTypes() {
 // Fetch object data for a given type
 async function fetchObjectData(objectType) {
     try {
-        const response = await d2Get(`/api/${objectType.plural}?fields=name,id,translations`);
+        const response = await d2Get(`/api/${objectType.plural}?fields=name,id,translations&paging=false`);
         return response[objectType.plural];
     } catch (error) {
         console.error(`Failed to fetch ${objectType.plural}:`, error);
@@ -309,3 +310,5 @@ document.addEventListener("DOMContentLoaded", loadData);
 // Make key functions available on the window object
 window.fixSelectedTranslations = fixSelectedTranslations;
 window.renderTable = renderTable;
+
+loadLegacyHeaderBarIfNeeded();
