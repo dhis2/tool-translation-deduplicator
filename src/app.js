@@ -2,6 +2,7 @@
 
 // JS Imports
 import { d2Get, d2PutJson } from "./js/d2api.js";
+import { loadLegacyHeaderBarIfNeeded } from "./js/check-header-bar.js";
 import M from "materialize-css";
 
 // CSS Imports
@@ -309,3 +310,5 @@ document.addEventListener("DOMContentLoaded", loadData);
 // Make key functions available on the window object
 window.fixSelectedTranslations = fixSelectedTranslations;
 window.renderTable = renderTable;
+
+loadLegacyHeaderBarIfNeeded();
